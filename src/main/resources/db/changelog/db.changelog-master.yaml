@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - preConditions:
+      - dbms:
+          type: postgresql
+  - include:
+      file: ./db.changelog-0001.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: ./db.changelog-0002.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: ./db.changelog-0003.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: ./db.changelog-0004.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: ./db.changelog-0005.sql
+      relativeToChangelogFile: true

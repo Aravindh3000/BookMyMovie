@@ -1,0 +1,20 @@
+{
+  "movieTitle": "Avengers: Endgame",
+  "theatreName": "CineMax Theatre",
+  "screenName": "Screen 1",
+  "startTime": "2024-01-15T18:00:00",
+  "showSeatConfigurations": [
+    {
+      "seatClass": "ECONOMY",
+      "price": 250.00
+    },
+    {
+      "seatClass": "PREMIUM",
+      "price": 400.00
+    },
+    {
+      "seatClass": "VIP",
+      "price": 600.00
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+-- liquibase formatted sql
+
+-- changeset system:0001-create-users
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(32) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(32) NOT NULL,
+    CONSTRAINT users_email_unique UNIQUE (email),
+    CONSTRAINT users_phone_unique UNIQUE (phone)
+);
+-- rollback DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE IF NOT EXISTS movies (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    title VARCHAR(255) NOT NULL,
+    duration_minutes INTEGER NOT NULL
+);
+-- rollback DROP TABLE IF EXISTS movies CASCADE;
+
+CREATE TABLE IF NOT EXISTS theatres (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(512) NOT NULL
+);
+-- rollback DROP TABLE IF EXISTS theatres CASCADE;
+
+CREATE TABLE IF NOT EXISTS screens (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name VARCHAR(255) NOT NULL,
+    theatre_id BIGINT NOT NULL,
+    condition VARCHAR(20) NOT NULL CHECK (condition IN ('AVAILABLE', 'NOT_AVAILABLE')),
+    CONSTRAINT fk_screens_theatre FOREIGN KEY (theatre_id) REFERENCES theatres(id) ON DELETE CASCADE
+);
+-- rollback DROP TABLE IF EXISTS screens CASCADE;
+
+CREATE TABLE IF NOT EXISTS shows (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    movie_id BIGINT NOT NULL,
+    screen_id BIGINT NOT NULL,
+    CONSTRAINT fk_shows_movie FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    CONSTRAINT fk_shows_screen FOREIGN KEY (screen_id) REFERENCES screens(id) ON DELETE CASCADE
+);
+-- rollback DROP TABLE IF EXISTS shows CASCADE;
+
+CREATE TABLE IF NOT EXISTS seats (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    number VARCHAR(10) NOT NULL,
+    seat_class VARCHAR(20) NOT NULL CHECK (seat_class IN ('ECONOMY', 'PREMIUM', 'VIP')),
+    condition VARCHAR(20) NOT NULL CHECK (condition IN ('AVAILABLE', 'NOT_AVAILABLE'))
+);
+-- rollback DROP TABLE IF EXISTS seats CASCADE;
+
+CREATE TABLE IF NOT EXISTS show_seats (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    show_id BIGINT NOT NULL,
+    seat_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('AVAILABLE', 'RESERVED', 'BOOKED')),
+    price DECIMAL(10,2) NOT NULL,
+    CONSTRAINT fk_show_seats_show FOREIGN KEY (show_id) REFERENCES shows(id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_seats_seat FOREIGN KEY (seat_id) REFERENCES seats(id) ON DELETE CASCADE,
+    CONSTRAINT uk_show_seat UNIQUE (show_id, seat_id)
+);
+-- rollback DROP TABLE IF EXISTS show_seats CASCADE;
+
+CREATE TABLE IF NOT EXISTS bookings (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED')),
+    CONSTRAINT fk_bookings_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+-- rollback DROP TABLE IF EXISTS bookings CASCADE;
+
+CREATE TABLE IF NOT EXISTS show_seat_bookings (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    booking_id BIGINT NOT NULL,
+    show_seat_id BIGINT NOT NULL,
+    CONSTRAINT fk_show_seat_bookings_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    CONSTRAINT fk_show_seat_bookings_show_seat FOREIGN KEY (show_seat_id) REFERENCES show_seats(id) ON DELETE CASCADE,
+    CONSTRAINT uk_booking_show_seat UNIQUE (booking_id, show_seat_id)
+);
+-- rollback DROP TABLE IF EXISTS show_seat_bookings CASCADE;
+
+CREATE TABLE IF NOT EXISTS payments (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    booking_id BIGINT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    mode VARCHAR(20) NOT NULL CHECK (mode IN ('CREDIT_CARD', 'UPI', 'NET_BANKING')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING', 'CONFIRMED', 'REFUNDED')),
+    reference_id VARCHAR(255),
+    CONSTRAINT fk_payments_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
+);
+-- rollback DROP TABLE IF EXISTS payments CASCADE;

@@ -1,0 +1,26 @@
+{
+  "theatreName": "CineMax Theatre",
+  "theatreAddress": "123 Main Street, City Center",
+  "screenName": "Screen 1",
+  "screenCondition": "AVAILABLE",
+  "seatConfigurations": [
+    {
+      "seatClass": "ECONOMY",
+      "rows": 5,
+      "columns": 10,
+      "seatCondition": "AVAILABLE"
+    },
+    {
+      "seatClass": "PREMIUM",
+      "rows": 3,
+      "columns": 8,
+      "seatCondition": "AVAILABLE"
+    },
+    {
+      "seatClass": "VIP",
+      "rows": 2,
+      "columns": 4,
+      "seatCondition": "AVAILABLE"
+    }
+  ]
+}
