@@ -1,6 +1,7 @@
 package com.example.BookMyMovie.repositories;
 
 import com.example.BookMyMovie.models.SeatStatus;
+import com.example.BookMyMovie.models.Show;
 import com.example.BookMyMovie.models.ShowSeat;
 
 import java.util.List;
@@ -12,4 +13,6 @@ import org.springframework.stereotype.Repository;
 public interface ShowSeatRepository extends JpaRepository<ShowSeat, Long> {
 
     List<ShowSeat> findAllByIdInAndStatus(List<Long> showSeatIds, SeatStatus status);
+
+    List<ShowSeat> findAllByShow(Show show);
 }

@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 public class ReserveSeatDto {
     private String userEmail;
-    private String showId;
+    private Long showId;
     private List<Long> showSeats;
 }

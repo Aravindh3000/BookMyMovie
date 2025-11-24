@@ -17,7 +17,7 @@ public class Screen extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "theatre_id", nullable = false)
     private Theatre theatre;
 

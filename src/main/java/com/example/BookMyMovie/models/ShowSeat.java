@@ -15,11 +15,11 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ShowSeat extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "show_id", nullable = false)
     private Show show;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "seat_id", nullable = false)
     private Seat seat;
 
