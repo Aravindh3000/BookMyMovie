@@ -284,6 +284,24 @@ public class UserService {
             booking.setStatus(BookingStatus.PENDING);
             booking = bookingRepository.save(booking);
 
+            List<ShowSeat> showSeats = showSeatRepository.findAllByIdInAndStatus(seatIds,
+                    SeatStatus.AVAILABLE);
+
+            if (showSeats.size() != seatIds.size()) {
+                throw new BadRequestException("Some of the seats are already booked");
+            }
+
+            List<ShowSeatBooking> bookings = new ArrayList<>();
+
+            for (ShowSeat showSeat : showSeats) {
+                ShowSeatBooking showSeatBooking = new ShowSeatBooking();
+                showSeatBooking.setBooking(booking);
+                showSeatBooking.setShowSeat(showSeat);
+                bookings.add(showSeatBooking);
+            }
+
+            showSeatBookingRepository.saveAll(bookings);
+
             ReserveResponseDto res = new ReserveResponseDto();
             res.setBookingId(booking.getId());
             res.setTotalAmount(booking.getAmount());

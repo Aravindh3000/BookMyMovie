@@ -14,11 +14,11 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ShowSeatBooking extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "show_seat_id", nullable = false)
     private ShowSeat showSeat;
 }

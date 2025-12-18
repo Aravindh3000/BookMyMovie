@@ -1,5 +1,5 @@
 package com.example.BookMyMovie.models;
 
 public enum BookingStatus {
-    PENDING, CONFIRMED
+    PENDING, CONFIRMED, CANCELLED
 }

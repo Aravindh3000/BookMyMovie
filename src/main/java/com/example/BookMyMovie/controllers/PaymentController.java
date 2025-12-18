@@ -1,5 +1,7 @@
 package com.example.BookMyMovie.controllers;
 
+import com.example.BookMyMovie.dtos.events.PaymentEvent;
+import com.example.BookMyMovie.kafka.producer.EventProducer;
 import com.example.BookMyMovie.models.Booking;
 import com.example.BookMyMovie.models.BookingStatus;
 import com.example.BookMyMovie.models.Payment;
@@ -45,10 +47,12 @@ public class PaymentController {
 	private final BookingRepository bookingRepository;
 
 	private static final Logger logger = LoggerFactory.getLogger(PaymentController.class);
+	private final EventProducer producer;
 
-	public PaymentController(PaymentRepository paymentRepository, BookingRepository bookingRepository) {
+	public PaymentController(PaymentRepository paymentRepository, BookingRepository bookingRepository, EventProducer producer) {
 		this.paymentRepository = paymentRepository;
 		this.bookingRepository = bookingRepository;
+		this.producer = producer;
 	}
 
 	@PostConstruct
@@ -136,7 +140,7 @@ public class PaymentController {
 			@RequestBody String payload) {
 
 		Event event = null;
-
+		
 		try {
 			event = ApiResource.GSON.fromJson(payload, Event.class);
 		} catch (JsonSyntaxException e) {
@@ -178,7 +182,7 @@ public class PaymentController {
 				String paymentId = metadata.get("paymentId");
 				System.out.println("Payment ID from metadata: " + paymentId);
 				if (paymentId != null) {
-					handleSuccessfulPayment(paymentId);
+					handleSuccessfulPaymentUsingEvents(paymentId);
 				} else {
 					System.out.println("No paymentId found in metadata");
 				}
@@ -229,6 +233,41 @@ public class PaymentController {
 			System.out.println("❌ Error processing payment ID " + paymentId + ": " + e.getMessage());
 			e.printStackTrace();
 		}
+	
+	}
+
+	private void handleSuccessfulPaymentUsingEvents(String paymentId) {
+		if (paymentId == null) {
+			System.out.println("Payment ID is null, cannot process payment");
+			return;
+		}
+
+		try {
+			Payment payment = paymentRepository.findById(Long.valueOf(paymentId))
+					.orElse(null);
+	
+			if (payment == null) {
+				logger.error("Payment not found for id {}", paymentId);
+				return;
+			}
+	
+			Long bookingId = payment.getBooking().getId();
+	
+			// ✅ Publish PaymentEvent asynchronously
+			PaymentEvent evt = new PaymentEvent(
+					bookingId,
+					payment.getId(),
+					"SUCCESS"
+			);
+	
+			producer.publishPaymentEvent(evt);
+	
+			logger.info("Published PaymentEvent to Kafka: {}", evt);
+	
+		} catch (Exception e) {
+			logger.error("Payment handling error: {}", e.getMessage(), e);
+		}
+	
 	}
 
 }

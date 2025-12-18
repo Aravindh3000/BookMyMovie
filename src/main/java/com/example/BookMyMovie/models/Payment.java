@@ -29,7 +29,7 @@ public class Payment extends BaseEntity {
     @Column(name = "reference_id")
     private String referenceId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;
 }

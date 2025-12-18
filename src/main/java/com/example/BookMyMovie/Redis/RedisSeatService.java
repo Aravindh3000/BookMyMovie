@@ -1,5 +1,6 @@
 package com.example.BookMyMovie.Redis;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -8,6 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.example.BookMyMovie.dtos.ShowSeatDto;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Service
 public class RedisSeatService {
 
@@ -15,6 +20,9 @@ public class RedisSeatService {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private String getKey(Long showId) {
         return "show:" + showId + ":seats";
@@ -67,13 +75,12 @@ public class RedisSeatService {
         return false;
     }
 
-
-    public void releaseSeat(Long showId, Long seatId) {
-        String key = "show:" + showId + ":seat:" + seatId + ":lockedBy";
-
-        redisTemplate.delete(key);
-
-        log.info("🔵 Seat {} unlocked and key {} removed from Redis", seatId, key);
+    public void releaseSeats(Long showId, List<Long> seatIds) {
+        for (Long seatId : seatIds) {
+            String key = "lock:show:" + showId + ":seat:" + seatId;
+            redisTemplate.delete(key);
+            log.info("🔵 Seats {} unlocked and key {} removed from Redis", seatIds, key);
+        }
     }
 
     public String getLockedBy(Long showId, Long seatId) {
@@ -84,5 +91,60 @@ public class RedisSeatService {
         log.debug("Seat {} is locked by: {}", seatId, val);
 
         return val;
+    }
+
+    /**
+     * Patch a single seat's status inside cached show seats JSON.
+     * Preserves remaining TTL (if any).
+     *
+     * Returns true if patch applied, false if no cached JSON exists or seat not found.
+     */
+     public boolean patchSeatStatusInCache(Long showId, List<Long> seatIds, String newStatus) {
+        String key = getKey(showId);
+        String cached = redisTemplate.opsForValue().get(key);
+        if (cached == null) {
+            log.warn("No cached seat list for show {}, cannot patch", seatIds);
+            return false;
+        }
+        System.out.println("New seatstatus is " + newStatus + seatIds);
+        try {
+            List<ShowSeatDto> list = objectMapper.readValue(cached, new TypeReference<List<ShowSeatDto>>() {});
+            boolean changed = false;
+            for (ShowSeatDto dto : list) {
+                if (seatIds.contains(dto.getId())) {
+                    dto.setSeatStatus(newStatus);
+                    changed = true;
+                }
+            }
+            if (!changed) {
+                log.warn("Seats {} not found in cached JSON for show {}", seatIds, showId);
+                return false;
+            }
+
+            String updatedJson = objectMapper.writeValueAsString(list);
+
+            // preserve TTL
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS); // -2: not exist, -1: no expiry
+            if (ttl == null) ttl = -2L;
+
+            if (ttl == -2L) {
+                // key disappeared: write without TTL (or choose default)
+                redisTemplate.opsForValue().set(key, updatedJson);
+                log.info("Patched cached seat and set without TTL for {}", key);
+            } else if (ttl == -1L) {
+                // no expiry
+                redisTemplate.opsForValue().set(key, updatedJson);
+                log.info("Patched cached seat and preserved no-expiry for {}", key);
+            } else {
+                // preserve remaining TTL
+                redisTemplate.opsForValue().set(key, updatedJson, ttl, TimeUnit.SECONDS);
+                log.info("Patched cached seat and preserved TTL={}s for {}", ttl, key);
+            }
+
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to patch cached seat status for show {} and seats {}", showId, seatIds, e);
+            return false;
+        }
     }
 }
